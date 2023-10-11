@@ -18,8 +18,8 @@ def unit_impulse(time, actuation_time, dt):
 def state_space_model(A,B,C, x_k, u_k, r_prime, dt):  
     # calculate the next state
     #step_values = [unit_step(n, t_s) for n in time_values]
-    x_k1 = dt*(np.matmul(A,x_k) + np.matmul(B,u_k))+r_prime# + np.matmul(C, r_prime)) + x_k# np.matmul(C, r_prime) + x_k
-    # calculate the current outputs
+    x_k1 = dt*(np.matmul(A,x_k) + np.matmul(B,u_k)) + r_prime + x_k# + np.matmul(C, r_prime)) + x_k# np.matmul(C, r_prime) + x_k
+    print("disturbance: ", r_prime)# calculate the current outputs
     #y = np.matmul(C,x_k) + np.matmul(D,u_k)
     # return the results
     return x_k1#, y
@@ -35,12 +35,17 @@ xs = 10 # cm
 xw = 5 # cm
 
 rprime = 0 # specify ourselves?
-ua = 20000 # specify ourselves?
+ua = 0 # specify ourselves?
 
 x1 = xs-xw
 x2 = xs # xs prime 
 x3 = xw - rprime
 x4 = xw # xw prime
+
+x1 = 0
+x2 = 0 # xs prime 
+x3 = 0
+x4 = 0 # xw prime
 
 
 
@@ -70,7 +75,7 @@ print('C:\n',C)
 
 # let's redo it for a longer time horizon
 t_0 = 0 # seconds
-t_f = 3 # seconds
+t_f = 30 # seconds
 # variable for tracking the states
 x_values = np.array(x_0.T)
 time_values = np.array([[t_0]])
@@ -88,7 +93,7 @@ while t < t_f:
     #print(step_values)
     rprime = np.array([[step_values]])
     x_k1 = state_space_model(A,B,C, x_k, u_k, rprime, dt) # y_k
-    #print(x_k1[0])
+    print("x_value: ", x_k1[0])
     # update the simulation time stamp
     t += dt
     # update the arrays
@@ -103,7 +108,7 @@ while t < t_f:
 
 print('dimentions of x_values\n',x_values.shape)
 print('dimentions of time_values\n',time_values.shape)
-print(x_values[:,0])
+#print(x_values[:,0])
 
 
 # create some subplots and display the results
@@ -118,17 +123,17 @@ axs[0].set_xlabel('time (seconds)')
 axs[0].set_ylabel('Position')
 axs[0].grid()
 # plot the second state vs time
-axs[1].semilogy(time_values, x_values[:,1], label='x prime')
+axs[1].plot(time_values, x_values[:,1], label='x prime')
 axs[1].set_xlabel('time (seconds)')
 axs[1].set_ylabel('Velocity')
 axs[1].grid()
 
-axs[2].semilogy(time_values, x_values[:,2], label='θ')
+axs[2].plot(time_values, x_values[:,2], label='θ')
 axs[2].set_xlabel('time (seconds)')
 axs[2].set_ylabel('Angle')
 axs[2].grid()
 # plot the second state vs time
-axs[3].semilogy(time_values, x_values[:,3], label='θ prime')
+axs[3].plot(time_values, x_values[:,3], label='θ prime')
 axs[3].set_xlabel('time (seconds)')
 axs[3].set_ylabel('Angular velocity')
 axs[3].grid()

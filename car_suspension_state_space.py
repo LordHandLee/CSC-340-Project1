@@ -1,13 +1,14 @@
-
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 import matplotlib.pyplot as plt
+import math
+
 np.set_printoptions(precision = 2, suppress = True)
 # Part 2, problem 4.a.
 print("Part 2, problem 4.a.: ")
 def unit_step(time, actuation_time):
     if time>= actuation_time:
-        value = 500
+        value = 20
     else:
         value = 0
     return value
@@ -15,12 +16,22 @@ def unit_step(time, actuation_time):
 def unit_impulse(time, actuation_time, dt):
     return unit_step(time, actuation_time) - unit_step(time, actuation_time+dt)
 
-def state_space_model(A,B,C, x_k, u_k, r_prime, dt):  
-    # calculate the next state
-    #step_values = [unit_step(n, t_s) for n in time_values]
-    x_k1 = dt*(np.matmul(A,x_k) + np.matmul(B,u_k)) + r_prime + x_k# + np.matmul(C, r_prime)) + x_k# np.matmul(C, r_prime) + x_k
-    print("disturbance: ", r_prime)# calculate the current outputs
-    #y = np.matmul(C,x_k) + np.matmul(D,u_k)
+def sin_wave(time, actuation_time, freq, amplitude):
+    if time >= actuation_time:
+        value = amplitude*math.sin(2*math.pi*freq*(time - actuation_time))
+    else:
+        value = 0
+    # return the output
+    return value
+
+def state_space_model(initial, A,B,C, x_k, u_k, r_prime, dt):  
+    print("rrime: ",r_prime[0][0])
+    initial[2] = xw - r_prime[0][0]
+    #initial[1] = x_k[1][0]
+    #initial[3] = x_k[3][0]
+    x_k1 = dt*(np.matmul(A,initial) + np.matmul(B,u_k) + r_prime)# + x_k  #+ r_prime# + np.matmul(C, r_prime)) + x_k# np.matmul(C, r_prime) + x_k
+    #print("disturbance: ", r_prime)# calculate the current outputs
+    #print(np.matmul(B,u_k))
     # return the results
     return x_k1#, y
 
@@ -28,54 +39,46 @@ def state_space_model(A,B,C, x_k, u_k, r_prime, dt):
 Ms = 290 #kg
 Mus = 59 #kg
 Ka = 16812 #N/m
-K1 = 190000 # N/m
+Kt = 190000 # N/m
 Ca = 1000 #N/(m/s)
 
-xs = 10 # cm
-xw = 5 # cm
+xs = 5 # cm
+xw = 2 # cm
 
 rprime = 0 # specify ourselves?
-ua = 0 # specify ourselves?
+#ua = 36000 # specify ourselves?
+ua = 2000
 
-x1 = xs-xw
-x2 = xs # xs prime 
-x3 = xw - rprime
-x4 = xw # xw prime
+# x1 = xs-xw # Suspension travel
+# x2 = 0 # xs prime  Car body velocity
+# x3 = xw - 0 # Wheel deflection
+# x4 = 0 # xw prime Wheel velocity
 
 x1 = 0
 x2 = 0 # xs prime 
 x3 = 0
 x4 = 0 # xw prime
 
-
-
-# l = 0.5 #m
-# g = 9.81 #m/s^2
 dt = 0.1 #seconds
-# tf = 2 #seconds
-# u = 0
-# f = u # force
-
 
 x_0 = np.array([[x1, x2, x3, x4]]).reshape(4,1)
 # define the A, B, C, and D matrices
 A = np.array([[0, 1, 0, -1],
               [(-Ka)/Ms, (-Ca)/Ms, 0, (Ca)/Ms],
               [0, 0, 0, 1],
-              [(Ka)/Mus, (Ca)/Mus, (-K1)/Mus, (-Ca)/Mus]])
+              [(Ka)/Mus, (Ca)/Mus, (-Kt)/Mus, (-Ca)/Mus]])
 print('A:\n',A)
 B = np.array([[0, 1/Ms, 0, -1/(Ms)]]).T
 print('B:\n',B)
 C = np.array([[0, 0, -1, 0]]).T
-# C = np.array([[1,0,0,0],
-#               [0,0,1,0]])
 print('C:\n',C)
-# D = np.array([[0, 0]]).reshape(2,1)
-# print('D:\n',D)
+print('X0: ', x_0)
+u_k = np.array([[ua]])
+
 
 # let's redo it for a longer time horizon
 t_0 = 0 # seconds
-t_f = 30 # seconds
+t_f = 10 # seconds
 # variable for tracking the states
 x_values = np.array(x_0.T)
 time_values = np.array([[t_0]])
@@ -89,11 +92,10 @@ t = t_0
 # simulate the system
 while t < t_f:
     # update the states x_{k+1}
-    step_values = unit_impulse(t, 2, dt)
-    #print(step_values)
+    step_values = sin_wave(t, 2, 1, 5)
     rprime = np.array([[step_values]])
-    x_k1 = state_space_model(A,B,C, x_k, u_k, rprime, dt) # y_k
-    print("x_value: ", x_k1[0])
+    x_k1 = state_space_model(x_0, A,B,C, x_k, u_k, rprime, dt) # y_k
+    #print("x_value: ", x_k1)
     # update the simulation time stamp
     t += dt
     # update the arrays
@@ -101,42 +103,31 @@ while t < t_f:
     time_values= np.append(time_values, np.array([[t]]),axis = 0)
     # set up the loop for the next iteration
     x_k = x_k1
-    # print("x: ")
-    # print(x_k)
-    # print("y: ")
-    # print(y_k)
 
 print('dimentions of x_values\n',x_values.shape)
 print('dimentions of time_values\n',time_values.shape)
-#print(x_values[:,0])
-
 
 # create some subplots and display the results
 fig, axs = plt.subplots(4, 1,figsize=(9,9))
 # plot the first state vs time
 fig.tight_layout(pad=5.0)
-mini = np.min(x_values[:,0])
-maxi = np.max(x_values[:,0])
 axs[0].plot(time_values, x_values[:,0], label='x')
-axs[0].set_ylim(mini, maxi)
 axs[0].set_xlabel('time (seconds)')
-axs[0].set_ylabel('Position')
+axs[0].set_ylabel('Suspension travel')
 axs[0].grid()
 # plot the second state vs time
 axs[1].plot(time_values, x_values[:,1], label='x prime')
 axs[1].set_xlabel('time (seconds)')
-axs[1].set_ylabel('Velocity')
+axs[1].set_ylabel('Car body velocity')
 axs[1].grid()
 
 axs[2].plot(time_values, x_values[:,2], label='θ')
 axs[2].set_xlabel('time (seconds)')
-axs[2].set_ylabel('Angle')
+axs[2].set_ylabel('Wheel deflection')
 axs[2].grid()
 # plot the second state vs time
 axs[3].plot(time_values, x_values[:,3], label='θ prime')
 axs[3].set_xlabel('time (seconds)')
-axs[3].set_ylabel('Angular velocity')
+axs[3].set_ylabel('Wheel velocity')
 axs[3].grid()
-
-
 plt.show()

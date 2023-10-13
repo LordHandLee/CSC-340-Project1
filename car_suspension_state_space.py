@@ -24,9 +24,11 @@ def sin_wave(time, actuation_time, freq, amplitude):
     # return the output
     return value
 
-def state_space_model(initial, A,B,C, x_k, u_k, r_prime, dt):  
-    print("rrime: ",r_prime[0][0])
-    initial[2] = xw - r_prime[0][0]
+def state_space_model(xs,xw,initial, A,B,C, x_k, u_k, r_prime, dt):  
+    #print("rrime: ",r_prime[0][0])
+    #initial[2] = xw - r_prime[0][0]
+    # x_k[0] = xs-xw
+    # x_k[2] = xs-r_prime[0][0]
     #initial[1] = x_k[1][0]
     #initial[3] = x_k[3][0]
     x_k1 = dt*(np.matmul(A,initial) + np.matmul(B,u_k) + r_prime)# + x_k  #+ r_prime# + np.matmul(C, r_prime)) + x_k# np.matmul(C, r_prime) + x_k
@@ -42,33 +44,34 @@ Ka = 16812 #N/m
 Kt = 190000 # N/m
 Ca = 1000 #N/(m/s)
 
-xs = 5 # cm
-xw = 2 # cm
+xs = 50 # cm
+xw = 40 # cm
 
 rprime = 0 # specify ourselves?
 #ua = 36000 # specify ourselves?
-ua = 2000
+ua = 1000
 
-# x1 = xs-xw # Suspension travel
-# x2 = 0 # xs prime  Car body velocity
-# x3 = xw - 0 # Wheel deflection
-# x4 = 0 # xw prime Wheel velocity
+x1 = 0#xs-xw # Suspension travel
+x2 = 0 # xs prime  Car body velocity
+x3 = 0#xw - 1 # Wheel deflection
+x4 = 0 # xw prime Wheel velocity
 
-x1 = 0
-x2 = 0 # xs prime 
-x3 = 0
-x4 = 0 # xw prime
+# x1 = 0
+# x2 = 0 # xs prime 
+# x3 = 0
+# x4 = 0 # xw prime
 
 dt = 0.1 #seconds
 
 x_0 = np.array([[x1, x2, x3, x4]]).reshape(4,1)
 # define the A, B, C, and D matrices
 A = np.array([[0, 1, 0, -1],
-              [(-Ka)/Ms, (-Ca)/Ms, 0, (Ca)/Ms],
+              [-Ka/Ms, -Ca/Ms, 0, Ca/Ms],
               [0, 0, 0, 1],
-              [(Ka)/Mus, (Ca)/Mus, (-Kt)/Mus, (-Ca)/Mus]])
+              [Ka/Mus, Ca/Mus, -Kt/Mus, -Ca/Mus]])
 print('A:\n',A)
 B = np.array([[0, 1/Ms, 0, -1/(Ms)]]).T
+#B = np.array([[0, 1, 0, -1]]).T
 print('B:\n',B)
 C = np.array([[0, 0, -1, 0]]).T
 print('C:\n',C)
@@ -92,9 +95,9 @@ t = t_0
 # simulate the system
 while t < t_f:
     # update the states x_{k+1}
-    step_values = sin_wave(t, 2, 1, 5)
+    step_values = unit_impulse(t, 2, dt)
     rprime = np.array([[step_values]])
-    x_k1 = state_space_model(x_0, A,B,C, x_k, u_k, rprime, dt) # y_k
+    x_k1 = state_space_model(xs,xw,x_0, A,B,C, x_k, u_k, rprime, dt) # y_k
     #print("x_value: ", x_k1)
     # update the simulation time stamp
     t += dt
